@@ -51,3 +51,10 @@ Crossref JSON, the paper/text extraction and reading notes for this extension ar
 ## Curved chart rendering — 26 October 2026
 
 Plotly surface API supports two-dimensional X/Y arrays for parametric surfaces and independent surfacecolor: https://plotly.com/javascript/reference/surface/ . Curved displays embed existing Julia coordinate-bin values; no new measured points or density information are generated. Synthetic directional volume mixtures are original pedagogical constructions, not literature-calibrated illumination models.
+
+## Blurring and separation comparison — 27 October 2026
+
+- Carreira-Perpiñán, M. Á. (2006). *Fast Nonparametric Clustering with Gaussian Blurring Mean-Shift*. ICML2006. Primary author PDF: https://faculty.ucmerced.edu/mcarreira-perpinan/papers/icml06.pdf . It supports the distinction between ordinary fixed-support mean shift and GBMS, the two early-compaction/late-merging phases, the moving-support update, and the fact that a broad Gaussian process ultimately collapses to coincident support. This project displays movement-entropy change as a diagnostic but does not copy the paper's stopping tolerance as a universal LiDAR threshold.
+- Carreira-Perpiñán, M. Á. (2008). *Generalised Blurring Mean-Shift Algorithms for Nonparametric Clustering*. CVPR2008. Primary author PDF: https://faculty.ucmerced.edu/mcarreira-perpinan/papers/cvpr08c.pdf . It supports the optional step-size form. The page defaults to the original update eta=1 and labels eta as an exploratory control.
+- DBSCAN follows Ester et al.(1996), already cited above. The new implementation is a small-scene reference implementation with Euclidean epsilon and minPts; it is not presented as an optimized library benchmark.
+- The MSP water-level panel and discrete peak-to-saddle bottleneck calculation are original project code. A density superlevel component is a topographic candidate, not a verified person. The synthetic bridge generator is illustrative and not a physical LiDAR/contact simulator.
