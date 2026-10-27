@@ -1,0 +1,44 @@
+{
+  "kind": "Original analytic teaching example, not LiDAR measurements",
+  "formula": "s=.15+.72 exp(-((x+.65)^2+(y+.25)^2)/.7)+.45 exp(-((x-.8)^2+(y-.65)^2)/.35)+.07 sin(2x) cos(2y)",
+  "grid": [
+    101,
+    101
+  ],
+  "domain": [
+    -2,
+    2
+  ],
+  "color_limits": [
+    0,
+    1
+  ],
+  "geometry_sha256": "90a5c311ff6d42893c1cba4c7c7705a8ccfc41828331443ea70819c9f55883a5",
+  "represented_quantities": [
+    "x",
+    "y",
+    "h(x,y)"
+  ],
+  "units": "arbitrary units",
+  "same_geometry_and_camera_for_figures": [
+    3,
+    4,
+    5,
+    6
+  ],
+  "camera": {
+    "elevation": 29,
+    "azimuth": -58
+  },
+  "figure_3": "Height geometry with Viridis scalar colour, without lighting modulation",
+  "figure_4": "Height geometry with grey shading, no scalar colour mapping; brightness follows normals and lighting",
+  "figure_5": "Height geometry with scalar colour and lighting modulation together",
+  "figure_6": "Constant opaque face colour, no lighting, no mesh edges",
+  "figure_7": "XY plan view, same scalar field and colour normalization",
+  "display_aspect": [
+    1,
+    1,
+    0.55
+  ],
+  "inspiration": "Rheingans and Landreth 1995, DOI 10.1007/978-3-642-79057-7_6, Figure 5"
+}

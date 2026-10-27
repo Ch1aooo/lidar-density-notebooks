@@ -1,0 +1,27 @@
+{
+  "title": "Measured L-shaped single-person walk",
+  "frames": 203,
+  "valid_frames": 202,
+  "total_points": 460750,
+  "sensor": [
+    0.0,
+    0.0,
+    2.7
+  ],
+  "missing_frames": [
+    1
+  ],
+  "timestamp_status": "No verified acquisition timestamps; frame index only",
+  "coordinate_units": "metres",
+  "point_source": "Saved filteredWorldFrames in world coordinates",
+  "source": "Coding/msp_measured_l_walk/data/spatial_spectra/measured_spatial_spectra.mat",
+  "source_sha256": "59a47e794715dd8fa10e032da14a5e2971641edb117c9abc730254046e428e02",
+  "centroid_reference": "Coding/msp_measured_l_walk/data/spatial_spectra/head_centroid_sphere_comparison.csv",
+  "centroid_reference_sha256": "c51769a51c48753e5b1eaed4695bb3faad532eeaae84e61f05fc3cdbc0e4e16f",
+  "export_transformations": "No additional filtering, deduplication, quantisation, rounding or resampling",
+  "head_centroid": "Arithmetic centroid of saved returns with 1.4 <= Z <= 1.6 m",
+  "body_centroid": "Arithmetic centroid of all saved foreground returns; not anatomical ground truth",
+  "sphere_center": "Previously saved head_sphere_fit center; not independently validated truth",
+  "numpy": "2.3.0",
+  "h5py": "3.16.0"
+}

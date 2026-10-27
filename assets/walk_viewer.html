@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#fff;color:#23364a;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,select,input{font:inherit}button,select{border:1px solid #c5d6e5;border-radius:5px;background:white;color:#23364a;padding:6px 7px}button{cursor:pointer}button:hover{background:#edf4fb}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #da9b43;outline-offset:2px}input[type=range]{width:100%;accent-color:#215b89}input[type=number]{width:61px;padding:5px;border:1px solid #b8cada;border-radius:4px}.viewer{border:1px solid #c9dbee;border-radius:9px;overflow:hidden}.viewer-head{padding:11px 15px;background:#edf4fb;border-bottom:1px solid #c9dbee}.viewer-head h3{margin:0;font:600 19px/1.35 Georgia,serif}.viewer-head p{margin:3px 0 0;color:#536779;font-size:12px}.layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(400px,1fr);align-items:start}.plots{min-width:0}.plot3d{height:370px}.plotxy{height:295px}.plotbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 10px}.plotbar button{font-size:12px}.xyhint{font-size:11px;color:#586d7f;margin:4px 12px 8px}.sidebars{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:#f8fbfe;border-left:1px solid #c9dbee;align-self:stretch}.panel{padding:13px 11px;min-width:0}.panel+.panel{border-left:1px solid #dce7f1;background:#f1f6fc}.panel h4{margin:0 0 12px;font-size:14px;color:#215b89}.group+.group{border-top:1px solid #d7e3ee;padding-top:12px;margin-top:13px}.group h5{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#516c83;margin:0 0 9px}.control{display:block;margin:0 0 11px}.control>span{display:block;margin-bottom:4px;font-size:12px;font-weight:600}.control select{width:100%;font-size:12px}.row{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.row button{font-size:12px}.small{font-size:11px;color:#586d7f}.readout{margin:0 0 12px;font-size:12px}.readout table{width:100%;border-collapse:collapse;font-size:11px}.readout th,.readout td{padding:7px 3px;border-bottom:1px solid #d5e2ef;text-align:left;vertical-align:top}.readout th{font-weight:500;width:43%}.readout td{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.definition{font-size:11px;color:#50677b;margin:9px 0}.definition strong{color:#23364a}label.check{display:flex;align-items:flex-start;gap:6px;margin:9px 0;font-size:12px}.check input{margin:3px 0 0}.caption{margin:0;padding:10px 15px;border-top:1px solid #dce7f1;font-size:11px;color:#536779}.missing{color:#9a441b}.legend{font-size:11px;line-height:1.8}.legend b{display:inline-block;width:14px}.error{color:#9b3526;padding:15px}summary{cursor:pointer;font-size:12px;color:#215b89;font-weight:600;margin-bottom:9px}details{margin-top:12px}a{color:#215b89}
+@media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr) 380px}.panel{padding:11px 9px}.plot3d{height:345px}.plotxy{height:285px}}
+@media(max-width:700px){.layout{grid-template-columns:1fr}.sidebars{border-left:0;border-top:1px solid #c9dbee}.plot3d{height:340px}.plotxy{height:285px}.panel{padding:14px}.readout table{font-size:12px}}
+@media(max-width:380px){.sidebars{grid-template-columns:1fr}.panel+.panel{border-left:0;border-top:1px solid #c9dbee}}
+</style><script>__PLOTLY_SCRIPT__</script></head><body>
+<section class="viewer" aria-label="Measured single-person point-cloud explorer">
+<header class="viewer-head"><h3>A recorded person, frame by frame</h3><p>Yiyun Xu's measured L-walk [6] · foreground returns · metres · acquisition timestamps unverified</p></header>
+<div class="layout">
+<div class="plots">
+<div class="plot3d" id="space" role="img" aria-label="Current 3D cloud, representative point and its trajectory"></div>
+<div class="plotbar"><button id="focusXY">Zoom to person</button><button id="resetXY">Full XY area</button></div>
+<div class="plotxy" id="plan" role="img" aria-label="XY view of the same frame and representative trajectory"></div>
+<p class="xyhint" id="zoomHint">XY: scroll to zoom; drag to pan. Zoom to person enlarges the current cloud.</p>
+</div>
+<div class="sidebars">
+<aside class="panel" aria-label="Playback and representation controls">
+<h4>Controls</h4>
+<section class="group"><h5>1 · Frame and playback</h5>
+<label class="control"><span>Selected frame</span><input aria-label="Selected frame" id="frame" type="range" min="1" max="203" value="97" step="1"></label>
+<div class="row"><button id="previous" aria-label="Previous frame">←</button><input id="number" aria-label="Frame number" type="number" min="1" max="203" value="97"><button id="next" aria-label="Next frame">→</button><button id="play">Play</button></div>
+<label class="control" style="margin-top:10px"><span>Playback speed (display only)</span><select id="speed" aria-label="Playback speed"><option value="2">2 frames / second</option><option value="5" selected>5 frames / second</option><option value="10">10 frames / second</option></select></label>
+</section>
+<section class="group"><h5>2 · Centroid and path</h5>
+<label class="control"><span>Representative point</span><select id="center" aria-label="Representative point"><option value="head">Head centroid (1.4–1.6 m)</option><option value="body">Whole-body centroid</option></select></label>
+<label class="check"><input type="checkbox" id="compare"> Compare both centroids</label>
+<label class="control"><span>Trajectory interval</span><select id="trail" aria-label="Trajectory interval"><option value="past" selected>History to this frame</option><option value="single">Current frame only</option><option value="full">Full sequence (future included)</option></select></label>
+</section>
+<section class="group"><h5>3 · Display</h5>
+<label class="control"><span>Upper figure</span><select id="view" aria-label="Upper figure"><option value="xyz">Physical XYZ space</option><option value="xyt">XY × frame</option></select></label>
+<button id="reset">Reset 3D view</button>
+<p class="small">Rotate freely; the view stays fixed across frames.</p>
+<details><summary>Height and accumulation</summary>
+<label class="control"><span>Displayed height scale <output id="heightValue">1.00</output></span><input id="height" aria-label="Displayed height scale" type="range" min="0" max="1" step="0.05" value="1"></label>
+<div class="small">Scale 0 flattens XYZ to XY; original Z values are retained.</div>
+<label class="check"><input type="checkbox" id="floor" checked> XY footprint at Z = 0</label>
+<label class="check"><input type="checkbox" id="accumulate"> Accumulated XY clouds</label>
+<label class="control"><span>Accumulation display step</span><select id="stride" aria-label="Accumulation display step"><option value="10" selected>Every 10th frame</option><option value="5">Every 5th frame</option><option value="1">Every frame</option></select></label>
+</details>
+</section>
+</aside>
+<aside class="panel" aria-label="Current frame values and reading guide">
+<h4>Values &amp; guide</h4>
+<div class="readout" id="readout" aria-live="polite">Loading the recorded sequence…</div>
+<section class="group"><h5>Centroid definitions</h5>
+<p class="definition"><strong>Head:</strong> mean of returns in the inclusive Z = 1.4–1.6 m band.</p>
+<p class="definition"><strong>Whole body:</strong> mean of all saved foreground returns; background residue may remain.</p>
+</section>
+<section class="group"><h5>Reading the figures</h5>
+<div class="legend"><b style="color:#39738f">●</b> Measured returns<br><b style="color:#215b89">―</b> Selected path<br><b style="color:#ba5a15">◆</b> Selected centroid<br><b style="color:#76528d">●</b> Other centroid / dashed path<br><b style="color:#215b89">┄</b> XY footprint / vertical link</div>
+<p class="definition">Frames preserve observation order. Playback speed is a viewing choice; it does not specify the sensor frame rate.</p>
+<p class="small" id="status" role="status">Preparing plots…</p>
+</section>
+</aside>
+</div></div>
+<p class="caption"><strong>Figure 1.</strong> Recorded XYZ returns and centroid paths with the corresponding XY localization. The saved input has undergone background extraction and sparse-point filtering; residue may remain. Frame 1 is missing. No positions are interpolated or accuracy validated here.</p>
+</section>
+<script id="sequence" type="application/octet-stream">__SEQUENCE_GZIP__</script>
+<script>__VIEWER_JS__</script></body></html>

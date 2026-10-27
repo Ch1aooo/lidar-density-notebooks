@@ -1,0 +1,13 @@
+* text=auto
+.gitattributes text eol=lf
+*.yml text eol=lf
+*.plutostate binary
+*.gz binary
+*.csv binary
+*.html text eol=lf
+*.jl text eol=lf
+*.js text eol=lf
+*.toml text eol=lf
+site/** -whitespace
+assets/plotly.min.js -whitespace
+assets/encoding/** -whitespace

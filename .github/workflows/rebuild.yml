@@ -1,0 +1,43 @@
+name: Rebuild website from Julia source
+on:
+  workflow_dispatch:
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    timeout-minutes: 60
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1.12.6'
+      - name: Install notebook environment
+        env:
+          JULIA_NUM_PRECOMPILE_TASKS: '1'
+          JULIA_PKG_PRECOMPILE_AUTO: '0'
+        run: julia --project=. -e 'using Pkg; Pkg.instantiate()'
+      - name: Rebuild all chapters and explorers
+        env:
+          JULIA_NUM_PRECOMPILE_TASKS: '1'
+          JULIA_IMAGE_THREADS: '1'
+        run: |
+          for chapter in introduction.jl chapter1_density.jl chapter2_lidar.jl chapter3_single_person.jl chapter4_multi_target.jl; do
+            julia --project=. tools/publish_book.jl "$chapter" site
+          done
+          julia --project=. tools/publish_explorers.jl site
+          python tools/finalize_site.py
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
