@@ -3,6 +3,7 @@ module SeparationComparison
 using JSON
 using LinearAlgebra
 using Statistics
+include("HierarchyStudy.jl")
 
 export synthetic_scene, dbscan, blurring_mean_shift, gaussian_field,
        water_components, study_payload, document
@@ -248,10 +249,13 @@ function study_payload(;kwargs...)
 end
 
 function document(payload=study_payload())
+    payload=copy(payload)
+    payload["hierarchy"]=HierarchyStudy.payload(@__MODULE__)
     template=read(joinpath(ROOT,"assets","separation_viewer.html"),String)
     vendor=replace(read(joinpath(ROOT,"assets","plotly.min.js"),String),"</script"=>"<\\/script")
     data=replace(JSON.json(payload),"</"=>"<\\/")
-    replace(template,"__PLOTLY_SCRIPT__"=>vendor,"__VIEWER_JS__"=>read(joinpath(ROOT,"assets","separation_viewer.js"),String),"__INITIAL_PAYLOAD__"=>data)
+    template=replace(template,"</main>"=>HierarchyStudy.markup()*"</main>")
+    replace(template,"__PLOTLY_SCRIPT__"=>vendor,"__VIEWER_JS__"=>read(joinpath(ROOT,"assets","separation_viewer.js"),String)*"\n"*HierarchyStudy.script(),"__INITIAL_PAYLOAD__"=>data)
 end
 
 end

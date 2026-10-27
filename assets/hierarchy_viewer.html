@@ -1,0 +1,27 @@
+<section class="hierarchy-study" aria-label="Persistence-guided MSP hierarchy">
+<style>
+.hierarchy-study{border-top:3px solid #397aa6;padding:18px}.hierarchy-study h2{font:600 24px Georgia,serif;color:#173f60}.hierarchy-controls{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px}.hierarchy-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.hierarchy-card{min-width:0;border:1px solid #c7d8e7;border-radius:9px;overflow:hidden}.hierarchy-card h3{margin:10px 12px;color:#215b89}.hierarchy-plot{height:350px}.hierarchy-table{overflow:auto;max-height:350px}.hierarchy-table table{border-collapse:collapse;width:100%;font-size:12px}.hierarchy-table td,.hierarchy-table th{padding:7px;border-bottom:1px solid #d7e2ec;text-align:right}.hierarchy-table th{background:#edf4fa;position:sticky;top:0}.hierarchy-table button{min-width:45px}.hierarchy-study button:focus-visible,.hierarchy-study select:focus-visible{outline:3px solid #b85a14}.hierarchy-status{padding:12px;background:#edf4fa;margin-top:12px}.hierarchy-controls select{max-width:100%}@media(max-width:800px){.hierarchy-grid{grid-template-columns:1fr}.hierarchy-controls{grid-template-columns:1fr 1fr}.hierarchy-study{padding:10px}}
+</style>
+<h2>Persistence-guided MSP · peak hierarchy</h2>
+<p>Follow each local maximum down to its merge saddle. Significant modes are exploratory observations; identifying people requires calibration and temporal evidence.</p>
+<p class="scope">Independent Julia-precomputed study: choose its scene and bandwidth below. The live controls in the three-column comparison above do not change these fixed inputs. Four scenes × eight bandwidths; seed 27. Thresholds are exploratory and require separate calibration for ρ and ρ².</p>
+<div class="hierarchy-controls">
+<label class="control"><span>Synthetic control</span><select id="ph-scene"></select></label>
+<label class="control"><span>Bandwidth σ (m)</span><select id="ph-sigma"></select></label>
+<label class="control"><span>Analysis field</span><select id="ph-field"><option value="density">Linear density ρ</option><option value="energy">Squared pseudo-energy ρ²</option></select></label>
+<label class="control"><span>Colour display</span><select id="ph-display"><option value="linear">Linear / field maximum</option><option value="db">10 log₁₀(field / maximum), dB</option></select></label>
+<label class="control"><span>Relative height threshold <output id="ph-height-out"></output></span><input id="ph-height" type="range" min="0" max=".9" step=".01" value=".2"></label>
+<label class="control"><span>Relative excess threshold <output id="ph-excess-out"></output></span><input id="ph-excess" type="range" min="0" max=".9" step=".01" value=".1"></label>
+<label class="control"><span>Water level <output id="ph-water-out"></output></span><input id="ph-water" type="range" min=".01" max="1" step=".01" value=".79"></label>
+<label class="control"><span>Selected peak (within this σ)</span><select id="ph-peak"></select></label>
+</div>
+<div class="hierarchy-grid">
+<article class="hierarchy-card"><h3>A · Density landscape and local peaks</h3><div id="ph-landscape" class="hierarchy-plot"></div></article>
+<article class="hierarchy-card"><h3>B · Selected branch above its saddle</h3><div id="ph-component" class="hierarchy-plot"></div></article>
+<article class="hierarchy-card"><h3>C · Merge hierarchy</h3><div id="ph-tree" class="hierarchy-plot"></div></article>
+<article class="hierarchy-card"><h3>D · Metrics and independent pruning</h3><div id="ph-table" class="hierarchy-table"></div></article>
+<article class="hierarchy-card"><h3>E · Bandwidth sensitivity at fixed input</h3><div id="ph-scale" class="hierarchy-plot"></div></article>
+<article class="hierarchy-card"><h3>Definitions and limitations</h3><p style="padding:0 14px">All local peaks are retained in the hierarchy. Equal-valued cells activate together under 8-neighbour connectivity. A dying branch uses its connected region strictly above its merge saddle. The essential root has no finite death or excess-mass metric. Root retention is an explicit convention.</p><p style="padding:0 14px">Area is grid quadrature area (m²). Integrated density and excess mass have score·m² units (score²·m² for pseudo-energy); neither is physical human volume. Raw support counts original points mapped to the nearest in-domain grid node. Descendant regions may be nested and must not be summed as disjoint measurements.</p><p style="padding:0 14px">Single-target scenes are synthetic Gaussian anatomical contributions, not ray-traced LiDAR. The same exploratory thresholds apply to every scene. A false extra mode is a useful negative-control failure. Changing σ recomputes the landscape in Julia; displayed peak IDs are local to each σ, not temporal identities.</p><button id="ph-download">Download current Julia metrics (JSON)</button></article>
+</div>
+<div id="ph-status" class="hierarchy-status" role="status"></div>
+</section>
