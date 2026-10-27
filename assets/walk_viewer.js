@@ -10,6 +10,63 @@
       center:{x:0,y:0,z:0},projection:{type:'perspective'}});
     const cameras={xyz:defaultCamera(),xyt:defaultCamera()};
     const good=p=>p&&p.every(Number.isFinite);
+    const MSP_SIGMA=.075,MSP_COARSE=.075,MSP_MAX_ITER=60;
+    const mspTracks={xy:null,xyz:null},mspJobs={xy:null,xyz:null},mspComplete={xy:false,xyz:false};
+    function mspMode(f,domain){
+      if(!f.count)return null;
+      const dims=domain==='xy'?2:3,axes=[f.x,f.y,f.z],bins=new Map(),sigma2=MSP_SIGMA*MSP_SIGMA;
+      for(let i=0;i<f.count;i++){
+        const key=Array.from({length:dims},(_,a)=>Math.floor(axes[a][i]/MSP_COARSE)).join(',');
+        let cell=bins.get(key);if(!cell){cell={n:0,sum:Array(dims).fill(0)};bins.set(key,cell);}
+        cell.n++;for(let a=0;a<dims;a++)cell.sum[a]+=axes[a][i];
+      }
+      const starts=[...bins.values()].sort((a,b)=>b.n-a.n).slice(0,6).map(c=>c.sum.map(v=>v/c.n));
+      let best=null,bestScore=-Infinity;
+      for(const seed of starts){
+        let q=seed.slice();
+        for(let iteration=0;iteration<MSP_MAX_ITER;iteration++){
+          let minD2=Infinity;
+          for(let i=0;i<f.count;i++){let d2=0;for(let a=0;a<dims;a++){const d=axes[a][i]-q[a];d2+=d*d;}minD2=Math.min(minD2,d2);}
+          let mass=0;const sum=Array(dims).fill(0);
+          for(let i=0;i<f.count;i++){
+            let d2=0;for(let a=0;a<dims;a++){const d=axes[a][i]-q[a];d2+=d*d;}
+            const w=Math.exp(-(d2-minD2)/(2*sigma2));mass+=w;for(let a=0;a<dims;a++)sum[a]+=w*axes[a][i];
+          }
+          const next=sum.map(v=>v/mass),step=Math.hypot(...next.map((v,a)=>v-q[a]));q=next;
+          if(step<1e-7)break;
+        }
+        let minD2=Infinity;
+        const d2s=new Float64Array(f.count);
+        for(let i=0;i<f.count;i++){let d2=0;for(let a=0;a<dims;a++){const d=axes[a][i]-q[a];d2+=d*d;}d2s[i]=d2;minD2=Math.min(minD2,d2);}
+        let mass=0;for(const d2 of d2s)mass+=Math.exp(-(d2-minD2)/(2*sigma2));
+        const score=-minD2/(2*sigma2)+Math.log(mass);
+        if(score>bestScore){bestScore=score;best=q;}
+      }
+      return domain==='xy'?[best[0],best[1],0]:best;
+    }
+    function representative(f,key){
+      if(key!=='msp')return f[key];
+      const track=mspTracks[$('msp-domain').value];return track?track[f.id-1]:null;
+    }
+    async function ensureMsp(domain){
+      if(mspComplete[domain])return mspTracks[domain];
+      if(mspJobs[domain])return mspJobs[domain];
+      mspJobs[domain]=(async()=>{
+        const track=Array(frames.length).fill(null),label=domain==='xy'?'XY accumulation':'XYZ full space';mspTracks[domain]=track;
+        const order=[selected,...frames.map((_,i)=>i).filter(i=>i!==selected)];
+        for(let step=0;step<order.length;step++){
+          const i=order[step];track[i]=mspMode(frames[i],domain);
+          if(step===0)request();
+          if(step%8===0){$('status').textContent=`Computing MSP · ${label} · ${step+1}/${frames.length}`;await new Promise(resolve=>setTimeout(resolve,0));}
+        }
+        mspComplete[domain]=true;$('status').textContent=`MSP ready · ${label} · σ = 7.5 cm`;return track;
+      })();
+      try{return await mspJobs[domain];}finally{mspJobs[domain]=null;}
+    }
+    function updateMethodControls(){
+      const isMsp=$('center').value==='msp';$('msp-options').hidden=!isMsp;
+      $('compare-text').textContent=isMsp?'Compare whole-body centroid':'Compare both centroids';
+    }
     let selected=96,version=0,rendered=-1,drawing=false,scheduled=false;
     let playing=false,timer,playEpoch=0,currentMode='xyz',currentScale=1,reset=false,planAction=null;
     const accumulation=new Map();
@@ -67,14 +124,17 @@
       return ['x','y'].map(k=>{const a=new Float64Array(end-(c.offsets[index+1]-c.offsets[index]));
         a.set(c[k].subarray(0,c.offsets[index]));a.set(c[k].subarray(c.offsets[index+1]),c.offsets[index]);return a;});
     }
-    function path(list,key,mode,scale){return [0,1,2].map(a=>list.map(f=>good(f[key])?
-      (a===2?(mode==='xyt'?f.id:f[key][2]*scale):f[key][a]):null));}
+    function path(list,key,mode,scale){return [0,1,2].map(a=>list.map(f=>{const p=representative(f,key);return good(p)?
+      (a===2?(mode==='xyt'?f.id:p[2]*scale):p[a]):null;}));}
     const empty=()=>[[],[],[]];
     const dot=(p,z)=>good(p)?[[p[0]],[p[1]],[z]]:empty();
     function readout(f,key,shown){
+      const rep=representative(f,key),domain=$('msp-domain').value;
+      const selectedLabel=key==='head'?'Head band':key==='body'?'Whole body':domain==='xy'?'MSP · XY accumulation':'MSP · XYZ density';
       const rows=[['Frame / sequence',f.id+' / '+frames.length],['Foreground points',f.count.toLocaleString()],
-        ['Head-band points',f.head_count.toLocaleString()],['Selected centroid',key==='head'?'Head band':'Whole body'],
+        ['Head-band points',f.head_count.toLocaleString()],['Selected representative',selectedLabel],
         ...['head','body'].map(k=>[k==='head'?'Head XYZ (m)':'Body XYZ (m)',good(f[k])?f[k].map(v=>v.toFixed(3)).join(', '):'Missing']),
+        ...(key==='msp'?[['MSP XYZ (m)',good(rep)?rep.map(v=>v.toFixed(3)).join(', '):'Computing…']]:[]),
         ['Accumulated points',shown.toLocaleString()]];
       const table=document.createElement('table');
       for(const [label,value] of rows){const tr=table.insertRow(),th=document.createElement('th');th.scope='row';th.textContent=label;
@@ -84,10 +144,10 @@
     async function draw(){
       const requested=version,index=selected,f=frames[index],mode=$('view').value,scale=Number($('height').value);
       const zoom=planAction;planAction=null;
-      const key=$('center').value,other=key==='head'?'body':'head',interval=$('trail').value,compare=$('compare').checked;
+      const key=$('center').value,other=key==='head'?'body':key==='body'?'head':'body',interval=$('trail').value,compare=$('compare').checked;
       const list=interval==='full'?frames:interval==='single'?[f]:frames.slice(0,index+1);
       const trajectory=path(list,key,mode,scale),alternate=compare?path(list,other,mode,scale):empty();
-      const rep=f[key],third=mode==='xyt'?f.id:good(rep)?rep[2]*scale:0,floor=mode==='xyz'&&$('floor').checked;
+      const rep=representative(f,key),third=mode==='xyt'?f.id:good(rep)?rep[2]*scale:0,floor=mode==='xyz'&&$('floor').checked;
       const data=[[f.x,f.y,mode==='xyt'?f.z.map(()=>f.id):f.z.map(z=>z*scale)],trajectory,dot(rep,third),
         mode==='xyz'?[[0],[0],[2.7*scale]]:empty(),floor?[trajectory[0],trajectory[1],trajectory[2].map(z=>z===null?null:0)]:empty(),
         floor&&good(rep)?[[rep[0],rep[0]],[rep[1],rep[1]],[0,third]]:empty(),floor?dot(rep,0):empty(),
@@ -118,9 +178,11 @@
       }
       readout(f,key,cloud[0].length);
       $('heightValue').textContent=scale.toFixed(2);$('height').disabled=mode==='xyt';
-      $('status').textContent='Ready · frame '+f.id+' · '+f.count+' points';
+      const mspState=key==='msp'?` · MSP ${$('msp-domain').value.toUpperCase()} ${mspComplete[$('msp-domain').value]?'cached':'calculating'}`:'';
+      $('status').textContent='Ready · frame '+f.id+' · '+f.count+' points'+mspState;
       Object.assign($('status').dataset,{frame:String(f.id),points:String(f.count),ready:'true',
-        renderMs:(performance.now()-started).toFixed(1),selected:key,compare:String(compare)});
+        renderMs:(performance.now()-started).toFixed(1),selected:key,mspDomain:$('msp-domain').value,
+        mspReady:String(key!=='msp'||mspComplete[$('msp-domain').value]),compare:String(compare)});
       cameraSnapshot();rendered=requested;
     }
     function fail(error){stop();rendered=version;$('status').textContent='Display error: '+error.message;console.error(error);}
@@ -141,9 +203,15 @@
     $('previous').onclick=()=>select(selected);$('next').onclick=()=>select(selected+2);
     $('play').onclick=()=>{if(playing){stop();return;}if(selected===frames.length-1)selected=-1;
       playing=true;$('play').textContent='Pause';tick(++playEpoch);};
-    for(const id of ['center','trail','view','floor','accumulate','stride','compare'])$(id).onchange=request;
+    async function changeMethod(){
+      updateMethodControls();
+      if($('center').value==='msp')await ensureMsp($('msp-domain').value);
+      request();
+    }
+    $('center').onchange=changeMethod;$('msp-domain').onchange=changeMethod;
+    for(const id of ['trail','view','floor','accumulate','stride','compare'])$(id).onchange=request;
     $('height').oninput=request;$('reset').onclick=()=>{reset=true;request();};
     $('focusXY').onclick=()=>{planAction='person';request();};$('resetXY').onclick=()=>{planAction='full';request();};
-    window.addEventListener('pagehide',stop);request();
+    window.addEventListener('pagehide',stop);updateMethodControls();request();
   }catch(error){$('status').textContent='Could not load local data: '+error.message;console.error(error);}
 })();

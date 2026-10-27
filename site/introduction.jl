@@ -60,9 +60,11 @@ The lower view shows the planar localization result. Select **XY × frame** to m
 as a plotted axis.
 
 There are **203 saved frames, 202 with returns**. Choose the **head centroid** (mean of returns
-in the **1.4–1.6 m height band**) or the **whole-body centroid** (mean of all saved foreground returns).
-Enable **Compare both centroids** to see both paths together. These are estimates from visible returns,
-not anatomical ground truth. A view you rotate stays fixed while the recorded points move.
+in the **1.4–1.6 m height band**), the **whole-body centroid** (mean of all saved foreground returns),
+or an exploratory **density peak (MSP)**. MSP can use a height-accumulated XY field or the full XYZ
+field; both are computed from the current frame in the browser with a fixed Gaussian bandwidth.
+Enable the comparison to retain a centroid reference. These are estimates from visible returns,
+not anatomical ground truth or persistent identities. A view you rotate stays fixed while the recorded points move.
 """
 
 # ╔═╡ a8250000-2026-4025-8000-000000000009

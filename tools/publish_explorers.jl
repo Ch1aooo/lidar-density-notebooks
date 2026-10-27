@@ -1,6 +1,7 @@
 import Pkg
 Pkg.activate(joinpath(@__DIR__,".."))
 using JSON
+ENV["JULIA_BOOK_STATIC_EXPORT"]="true"
 include(joinpath(@__DIR__,"..","src","BookUI.jl"))
 include(joinpath(@__DIR__,"..","src","DensityPartI.jl"))
 include(joinpath(@__DIR__,"..","src","PartIPage.jl"))

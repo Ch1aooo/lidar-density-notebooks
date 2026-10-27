@@ -4,7 +4,7 @@
 @media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr) 380px}.panel{padding:11px 9px}.plot3d{height:345px}.plotxy{height:285px}}
 @media(max-width:700px){.layout{grid-template-columns:1fr}.sidebars{border-left:0;border-top:1px solid #c9dbee}.plot3d{height:340px}.plotxy{height:285px}.panel{padding:14px}.readout table{font-size:12px}}
 @media(max-width:380px){.sidebars{grid-template-columns:1fr}.panel+.panel{border-left:0;border-top:1px solid #c9dbee}}
-</style><script>__PLOTLY_SCRIPT__</script></head><body>
+</style><style>.method-options{border-left:3px solid #c1d6eb;background:#edf4fb;padding:8px 9px;margin:-3px 0 10px}.method-options[hidden]{display:none}.method-options .control{margin-bottom:6px}</style><script>__PLOTLY_SCRIPT__</script></head><body>
 <section class="viewer" aria-label="Measured single-person point-cloud explorer">
 <header class="viewer-head"><h3>A recorded person, frame by frame</h3><p>Yiyun Xu's measured L-walk [6] · foreground returns · metres · acquisition timestamps unverified</p></header>
 <div class="layout">
@@ -23,8 +23,12 @@
 <label class="control" style="margin-top:10px"><span>Playback speed (display only)</span><select id="speed" aria-label="Playback speed"><option value="2">2 frames / second</option><option value="5" selected>5 frames / second</option><option value="10">10 frames / second</option></select></label>
 </section>
 <section class="group"><h5>2 · Centroid and path</h5>
-<label class="control"><span>Representative point</span><select id="center" aria-label="Representative point"><option value="head">Head centroid (1.4–1.6 m)</option><option value="body">Whole-body centroid</option></select></label>
-<label class="check"><input type="checkbox" id="compare"> Compare both centroids</label>
+<label class="control"><span>Representative point</span><select id="center" aria-label="Representative point"><option value="head">Head centroid (1.4–1.6 m)</option><option value="body">Whole-body centroid</option><option value="msp">Density peak (MSP)</option></select></label>
+<div class="method-options" id="msp-options" hidden>
+<label class="control"><span>MSP field</span><select id="msp-domain" aria-label="MSP density domain"><option value="xy">XY accumulation · all heights</option><option value="xyz">XYZ density · full space</option></select></label>
+<p class="small">Fixed Gaussian σ = 7.5 cm. Calculated from the current frame in this browser. <a href="__MSP_DEFINITION_URL__" target="_top">Definition and limits →</a></p>
+</div>
+<label class="check"><input type="checkbox" id="compare"> <span id="compare-text">Compare both centroids</span></label>
 <label class="control"><span>Trajectory interval</span><select id="trail" aria-label="Trajectory interval"><option value="past" selected>History to this frame</option><option value="single">Current frame only</option><option value="full">Full sequence (future included)</option></select></label>
 </section>
 <section class="group"><h5>3 · Display</h5>
@@ -46,6 +50,7 @@
 <section class="group"><h5>Centroid definitions</h5>
 <p class="definition"><strong>Head:</strong> mean of returns in the inclusive Z = 1.4–1.6 m band.</p>
 <p class="definition"><strong>Whole body:</strong> mean of all saved foreground returns; background residue may remain.</p>
+<p class="definition"><strong>MSP:</strong> a Gaussian-density mode estimated from all returns in one frame. XY accumulates height and places the result at Z = 0; XYZ searches full space. It is a candidate observed-density peak, not an anatomical centre, person count or identity.</p>
 </section>
 <section class="group"><h5>Reading the figures</h5>
 <div class="legend"><b style="color:#39738f">●</b> Measured returns<br><b style="color:#215b89">―</b> Selected path<br><b style="color:#ba5a15">◆</b> Selected centroid<br><b style="color:#76528d">●</b> Other centroid / dashed path<br><b style="color:#215b89">┄</b> XY footprint / vertical link</div>

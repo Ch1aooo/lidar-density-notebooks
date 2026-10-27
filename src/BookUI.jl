@@ -114,7 +114,8 @@ function viewer_document(kind::Symbol)
     template=read(joinpath(PROJECT,"assets",name*".html"),String)
     vendor=replace(read(joinpath(PROJECT,"assets","plotly.min.js"),String), "</script"=>"<\\/script")
     js=read(joinpath(PROJECT,"assets",name*".js"),String)
-    document=replace(template,"__PLOTLY_SCRIPT__"=>vendor,"__VIEWER_JS__"=>js)
+    document=replace(template,"__PLOTLY_SCRIPT__"=>vendor,"__VIEWER_JS__"=>js,
+        "__MSP_DEFINITION_URL__"=>notebook_url("chapter1_density.jl")*"#MSP-and-the-centroid")
     if kind == :walk
         document=replace(document,"__SEQUENCE_GZIP__"=>base64encode(read(joinpath(PROJECT,"data","measured_walk.json.gz"))))
     end
