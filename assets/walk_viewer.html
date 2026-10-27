@@ -4,7 +4,7 @@
 @media(max-width:850px){.layout{grid-template-columns:minmax(0,1fr) 380px}.panel{padding:11px 9px}.plot3d{height:345px}.plotxy{height:285px}}
 @media(max-width:700px){.layout{grid-template-columns:1fr}.sidebars{border-left:0;border-top:1px solid #c9dbee}.plot3d{height:340px}.plotxy{height:285px}.panel{padding:14px}.readout table{font-size:12px}}
 @media(max-width:380px){.sidebars{grid-template-columns:1fr}.panel+.panel{border-left:0;border-top:1px solid #c9dbee}}
-</style><style>.method-options{border-left:3px solid #c1d6eb;background:#edf4fb;padding:8px 9px;margin:-3px 0 10px}.method-options[hidden]{display:none}.method-options .control{margin-bottom:6px}</style><script>__PLOTLY_SCRIPT__</script></head><body>
+</style><style>.method-options{border-left:3px solid #c1d6eb;background:#edf4fb;padding:8px 9px;margin:-3px 0 10px}.method-options[hidden]{display:none}.method-options .control{margin-bottom:6px}.trajectory-options{border:1px solid #d4e1ed;border-radius:6px;padding:8px 9px;margin:0 0 11px;background:#fff}.trajectory-options>span{display:block;margin-bottom:5px;font-size:12px;font-weight:600}.trajectory-options .check{margin:5px 0;padding:4px 5px;border-radius:4px}.trajectory-options .check.is-primary{background:#e6ebef;color:#7c8791}.trajectory-options .check.is-primary input{accent-color:#9099a1}</style><script>__PLOTLY_SCRIPT__</script></head><body>
 <section class="viewer" aria-label="Measured single-person point-cloud explorer">
 <header class="viewer-head"><h3>A recorded person, frame by frame</h3><p>Yiyun Xu's measured L-walk [6] · foreground returns · metres · acquisition timestamps unverified</p></header>
 <div class="layout">
@@ -22,13 +22,19 @@
 <div class="row"><button id="previous" aria-label="Previous frame">←</button><input id="number" aria-label="Frame number" type="number" min="1" max="203" value="97"><button id="next" aria-label="Next frame">→</button><button id="play">Play</button></div>
 <label class="control" style="margin-top:10px"><span>Playback speed (display only)</span><select id="speed" aria-label="Playback speed"><option value="2">2 frames / second</option><option value="5" selected>5 frames / second</option><option value="10">10 frames / second</option></select></label>
 </section>
-<section class="group"><h5>2 · Centroid and path</h5>
+<section class="group"><h5>2 · Representative points and paths</h5>
 <label class="control"><span>Representative point</span><select id="center" aria-label="Representative point"><option value="head">Head centroid (1.4–1.6 m)</option><option value="body">Whole-body centroid</option><option value="msp">Density peak (MSP)</option></select></label>
 <div class="method-options" id="msp-options" hidden>
 <label class="control"><span>MSP field</span><select id="msp-domain" aria-label="MSP density domain"><option value="xy">XY accumulation · all heights</option><option value="xyz">XYZ density · full space</option></select></label>
 <p class="small">Fixed Gaussian σ = 7.5 cm. Calculated from the current frame in this browser. <a href="__MSP_DEFINITION_URL__" target="_top">Definition and limits →</a></p>
 </div>
-<label class="check"><input type="checkbox" id="compare"> <span id="compare-text">Compare both centroids</span></label>
+<div class="trajectory-options"><span>Show trajectories</span>
+<label class="check" id="show-head-label"><input type="checkbox" id="show-head" checked> Head centroid</label>
+<label class="check" id="show-body-label"><input type="checkbox" id="show-body"> Whole-body centroid</label>
+<label class="check" id="show-msp-label"><input type="checkbox" id="show-msp"> Density peak (MSP)</label>
+<p class="small">The primary method stays checked and locked. Select either or both additional paths.</p></div>
+<label class="control"><span>Representative height in upper figure</span><select id="rep-height" aria-label="Representative height in upper figure"><option value="space">Spatial position · keep Z</option><option value="ground">XY ground plane · Z = 0</option></select></label>
+<p class="small">Applies to every shown trajectory in the physical XYZ view. The lower figure is always XY.</p>
 <label class="control"><span>Trajectory interval</span><select id="trail" aria-label="Trajectory interval"><option value="past" selected>History to this frame</option><option value="single">Current frame only</option><option value="full">Full sequence (future included)</option></select></label>
 </section>
 <section class="group"><h5>3 · Display</h5>
@@ -38,7 +44,6 @@
 <details><summary>Height and accumulation</summary>
 <label class="control"><span>Displayed height scale <output id="heightValue">1.00</output></span><input id="height" aria-label="Displayed height scale" type="range" min="0" max="1" step="0.05" value="1"></label>
 <div class="small">Scale 0 flattens XYZ to XY; original Z values are retained.</div>
-<label class="check"><input type="checkbox" id="floor" checked> XY footprint at Z = 0</label>
 <label class="check"><input type="checkbox" id="accumulate"> Accumulated XY clouds</label>
 <label class="control"><span>Accumulation display step</span><select id="stride" aria-label="Accumulation display step"><option value="10" selected>Every 10th frame</option><option value="5">Every 5th frame</option><option value="1">Every frame</option></select></label>
 </details>
@@ -53,13 +58,13 @@
 <p class="definition"><strong>MSP:</strong> a Gaussian-density mode estimated from all returns in one frame. XY accumulates height and places the result at Z = 0; XYZ searches full space. It is a candidate observed-density peak, not an anatomical centre, person count or identity.</p>
 </section>
 <section class="group"><h5>Reading the figures</h5>
-<div class="legend"><b style="color:#39738f">●</b> Measured returns<br><b style="color:#215b89">―</b> Selected path<br><b style="color:#ba5a15">◆</b> Selected centroid<br><b style="color:#76528d">●</b> Other centroid / dashed path<br><b style="color:#215b89">┄</b> XY footprint / vertical link</div>
+<div class="legend"><b style="color:#39738f">●</b> Measured returns<br><b style="color:#ba5a15">◆</b> Head centroid / path<br><b style="color:#76528d">●</b> Whole-body centroid / path<br><b style="color:#16856a">✚</b> MSP candidate / path</div>
 <p class="definition">Frames preserve observation order. Playback speed is a viewing choice; it does not specify the sensor frame rate.</p>
 <p class="small" id="status" role="status">Preparing plots…</p>
 </section>
 </aside>
 </div></div>
-<p class="caption"><strong>Figure 1.</strong> Recorded XYZ returns and centroid paths with the corresponding XY localization. The saved input has undergone background extraction and sparse-point filtering; residue may remain. Frame 1 is missing. No positions are interpolated or accuracy validated here.</p>
+<p class="caption"><strong>Figure 1.</strong> Recorded XYZ returns and selected representative-point paths with the corresponding XY localization. The saved input has undergone background extraction and sparse-point filtering; residue may remain. Frame 1 is missing. No positions are interpolated or accuracy validated here.</p>
 </section>
 <script id="sequence" type="application/octet-stream">__SEQUENCE_GZIP__</script>
 <script>__VIEWER_JS__</script></body></html>

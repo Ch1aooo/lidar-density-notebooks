@@ -2,7 +2,7 @@
 
 [Open the shared website](https://ch1aooo.github.io/lidar-density-notebooks/)
 
-Julia/Pluto research notebook by Yehao Chen. The website is a reading edition with browser-only explorers. Visitors do not need Julia. The measured-walk explorer computes fixed-bandwidth XY/XYZ MSP candidates in the visitor's browser; the point sequence stays unchanged. Live Julia-backed notebook controls are available locally, not on GitHub Pages.
+Julia/Pluto research notebook by Yehao Chen. The website is a reading edition with browser-only explorers. Visitors do not need Julia. The measured-walk explorer computes fixed-bandwidth XY/XYZ MSP candidates in the visitor's browser; it can overlay head-centroid, whole-body-centroid and MSP paths in both figures and apply one spatial-Z/ground-plane display choice to every visible path. The point sequence stays unchanged. Live Julia-backed notebook controls are available locally, not on GitHub Pages.
 
 ## Run locally
 

@@ -4,7 +4,11 @@
     const bytes=Uint8Array.from(atob($('sequence').textContent.trim()),c=>c.charCodeAt(0));
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
     const {frames}=JSON.parse(await new Response(stream).text());
-    const blue='#39738f',ink='#215b89',orange='#ba5a15',violet='#76528d';
+    const blue='#39738f',orange='#ba5a15',violet='#76528d',green='#16856a';
+    const methods=['head','body','msp'],extras=new Set();
+    const methodStyle={head:{label:'Head centroid',color:orange,symbol:'diamond',dash:'solid'},
+      body:{label:'Whole-body centroid',color:violet,symbol:'circle',dash:'dash'},
+      msp:{label:'Density peak (MSP)',color:green,symbol:'cross',dash:'dot'}};
     const config={responsive:true,displaylogo:false,scrollZoom:true,toImageButtonOptions:{format:'png',scale:2}};
     const defaultCamera=()=>({eye:{x:1.55,y:-1.8,z:1.05},up:{x:0,y:0,z:1},
       center:{x:0,y:0,z:0},projection:{type:'perspective'}});
@@ -63,9 +67,14 @@
       })();
       try{return await mspJobs[domain];}finally{mspJobs[domain]=null;}
     }
+    function shownMethods(){const primary=$('center').value;return methods.filter(k=>k===primary||extras.has(k));}
     function updateMethodControls(){
-      const isMsp=$('center').value==='msp';$('msp-options').hidden=!isMsp;
-      $('compare-text').textContent=isMsp?'Compare whole-body centroid':'Compare both centroids';
+      const primary=$('center').value;
+      for(const key of methods){
+        const box=$('show-'+key),forced=key===primary;box.checked=forced||extras.has(key);box.disabled=forced;
+        $('show-'+key+'-label').classList.toggle('is-primary',forced);
+      }
+      $('msp-options').hidden=!shownMethods().includes('msp');
     }
     let selected=96,version=0,rendered=-1,drawing=false,scheduled=false;
     let playing=false,timer,playEpoch=0,currentMode='xyz',currentScale=1,reset=false,planAction=null;
@@ -74,20 +83,16 @@
       uid:name,type:'scatter3d',x:[],y:[],z:[],name,mode,connectgaps:false,
       marker:{color,size,symbol,opacity:mode==='markers'&&name==='Returns'?.62:1},
       line:{color,width:2,dash},hovertemplate:name+'<br>X %{x:.3f}<br>Y %{y:.3f}<br>Third axis %{z:.3f}<extra></extra>'});
-    // Fixed trace slots, including missing observations: no scene reconstruction on a frame change.
-    const spaceData=[trace3('Returns','markers',blue,1.15),trace3('Selected trajectory','lines',ink),
-      trace3('Selected centroid','markers',orange,3.3,'diamond'),trace3('Ceiling LiDAR','markers','#5b556a',6,'diamond'),
-      trace3('XY footprint','lines',ink,2,'circle','dash'),trace3('Vertical link','lines',ink,2,'circle','dash'),
-      trace3('Current XY','markers',orange,2.8,'diamond'),trace3('Other centroid trajectory','lines',violet,2,'circle','dash'),
-      trace3('Other centroid','markers',violet,3.2)];
+    // Fixed slots for all three methods: frame changes never reconstruct either scene.
+    const spaceData=[trace3('Returns','markers',blue,1.15)];
+    for(const key of methods){const s=methodStyle[key];spaceData.push(trace3(s.label+' path','lines',s.color,2,'circle',s.dash),trace3(s.label,'markers',s.color,3.5,s.symbol));}
+    spaceData.push(trace3('Ceiling LiDAR','markers','#5b556a',6,'diamond'));
     const trace2=(name,type,mode,color,size=2,symbol='circle')=>({uid:name,type,x:[],y:[],name,mode,
       connectgaps:false,marker:{color,size,symbol,opacity:type==='scattergl'?.4:1},line:{color,width:2},
       hoverinfo:type==='scattergl'?'skip':'x+y+name'});
-    const planData=[trace2('Accumulated returns','scattergl','markers','#97abc0',1.3),
-      trace2('Current returns','scattergl','markers',blue,1.6),trace2('Selected trajectory','scatter','lines',ink),
-      trace2('Selected centroid','scatter','markers',orange,6,'diamond'),trace2('Other trajectory','scatter','lines',violet),
-      trace2('Other centroid','scatter','markers',violet,5)];
-    planData[0].marker.opacity=.2;planData[4].line.dash='dash';
+    const planData=[trace2('Accumulated returns','scattergl','markers','#97abc0',1.3),trace2('Current returns','scattergl','markers',blue,1.6)];
+    for(const key of methods){const s=methodStyle[key],line=trace2(s.label+' path','scatter','lines',s.color),point=trace2(s.label,'scatter','markers',s.color,6,s.symbol);line.line.dash=s.dash;planData.push(line,point);}
+    planData[0].marker.opacity=.2;
     // Initialize WebGL with a real cloud (some drivers fail when the entire scene is empty).
     const initial=frames[selected];
     Object.assign(spaceData[0],{x:initial.x,y:initial.y,z:initial.z});
@@ -124,17 +129,20 @@
       return ['x','y'].map(k=>{const a=new Float64Array(end-(c.offsets[index+1]-c.offsets[index]));
         a.set(c[k].subarray(0,c.offsets[index]));a.set(c[k].subarray(c.offsets[index+1]),c.offsets[index]);return a;});
     }
+    function plottedZ(p,f,mode,scale){return mode==='xyt'?f.id:$('rep-height').value==='ground'?0:p[2]*scale;}
     function path(list,key,mode,scale){return [0,1,2].map(a=>list.map(f=>{const p=representative(f,key);return good(p)?
-      (a===2?(mode==='xyt'?f.id:p[2]*scale):p[a]):null;}));}
+      (a===2?plottedZ(p,f,mode,scale):p[a]):null;}));}
     const empty=()=>[[],[],[]];
     const dot=(p,z)=>good(p)?[[p[0]],[p[1]],[z]]:empty();
-    function readout(f,key,shown){
-      const rep=representative(f,key),domain=$('msp-domain').value;
+    function readout(f,key,shown,visible){
+      const rep=representative(f,key),domain=$('msp-domain').value,msp=representative(f,'msp');
       const selectedLabel=key==='head'?'Head band':key==='body'?'Whole body':domain==='xy'?'MSP · XY accumulation':'MSP · XYZ density';
       const rows=[['Frame / sequence',f.id+' / '+frames.length],['Foreground points',f.count.toLocaleString()],
-        ['Head-band points',f.head_count.toLocaleString()],['Selected representative',selectedLabel],
+        ['Head-band points',f.head_count.toLocaleString()],['Primary representative',selectedLabel],
+        ['Shown trajectories',visible.map(k=>methodStyle[k].label).join(' · ')],
         ...['head','body'].map(k=>[k==='head'?'Head XYZ (m)':'Body XYZ (m)',good(f[k])?f[k].map(v=>v.toFixed(3)).join(', '):'Missing']),
-        ...(key==='msp'?[['MSP XYZ (m)',good(rep)?rep.map(v=>v.toFixed(3)).join(', '):'Computing…']]:[]),
+        ...(visible.includes('msp')?[['MSP XYZ (m)',good(msp)?msp.map(v=>v.toFixed(3)).join(', '):'Computing…']]:[]),
+        ['Upper trajectory height',$('rep-height').value==='ground'?'XY ground plane · Z = 0':'Spatial position · keep Z'],
         ['Accumulated points',shown.toLocaleString()]];
       const table=document.createElement('table');
       for(const [label,value] of rows){const tr=table.insertRow(),th=document.createElement('th');th.scope='row';th.textContent=label;
@@ -144,17 +152,21 @@
     async function draw(){
       const requested=version,index=selected,f=frames[index],mode=$('view').value,scale=Number($('height').value);
       const zoom=planAction;planAction=null;
-      const key=$('center').value,other=key==='head'?'body':key==='body'?'head':'body',interval=$('trail').value,compare=$('compare').checked;
+      const key=$('center').value,visible=shownMethods(),interval=$('trail').value;
       const list=interval==='full'?frames:interval==='single'?[f]:frames.slice(0,index+1);
-      const trajectory=path(list,key,mode,scale),alternate=compare?path(list,other,mode,scale):empty();
-      const rep=representative(f,key),third=mode==='xyt'?f.id:good(rep)?rep[2]*scale:0,floor=mode==='xyz'&&$('floor').checked;
-      const data=[[f.x,f.y,mode==='xyt'?f.z.map(()=>f.id):f.z.map(z=>z*scale)],trajectory,dot(rep,third),
-        mode==='xyz'?[[0],[0],[2.7*scale]]:empty(),floor?[trajectory[0],trajectory[1],trajectory[2].map(z=>z===null?null:0)]:empty(),
-        floor&&good(rep)?[[rep[0],rep[0]],[rep[1],rep[1]],[0,third]]:empty(),floor?dot(rep,0):empty(),
-        alternate,compare?dot(f[other],mode==='xyt'?f.id:good(f[other])?f[other][2]*scale:0):empty()];
+      const rep=representative(f,key),displayedZ={},data=[[f.x,f.y,mode==='xyt'?f.z.map(()=>f.id):f.z.map(z=>z*scale)]];
+      for(const method of methods){
+        const shown=visible.includes(method),p=representative(f,method),trajectory=shown?path(list,method,mode,scale):empty();
+        if(shown&&good(p))displayedZ[method]=plottedZ(p,f,mode,scale);
+        data.push(trajectory,shown&&good(p)?dot(p,plottedZ(p,f,mode,scale)):empty());
+      }
+      data.push(mode==='xyz'?[[0],[0],[2.7*scale]]:empty());
       const cloud=$('accumulate').checked?cloudAt(index,interval,Number($('stride').value)):[[],[]];
-      const xy=[cloud,[f.x,f.y],trajectory.slice(0,2),dot(rep,0).slice(0,2),alternate.slice(0,2),
-        (compare?dot(f[other],0):empty()).slice(0,2)];
+      const xy=[cloud,[f.x,f.y]];
+      for(const method of methods){
+        const shown=visible.includes(method),p=representative(f,method),trajectory=shown?path(list,method,mode,scale):empty();
+        xy.push(trajectory.slice(0,2),shown&&good(p)?dot(p,0).slice(0,2):empty().slice(0,2));
+      }
       const started=performance.now();
       if(mode!==currentMode||scale!==currentScale||reset){
         const changedMode=mode!==currentMode;currentMode=mode;currentScale=scale;
@@ -167,6 +179,7 @@
       // Frame updates touch data only; neither layout nor the user's camera/XY zoom is replaced.
       await Promise.all([Plotly.restyle($('space'),{x:data.map(d=>d[0]),y:data.map(d=>d[1]),z:data.map(d=>d[2])}),
         Plotly.restyle($('plan'),{x:xy.map(d=>d[0]),y:xy.map(d=>d[1])})]);
+      Object.assign($('space').dataset,{shown:visible.join(','),representativeZ:JSON.stringify(displayedZ)});$('plan').dataset.shown=visible.join(',');
       if(zoom==='full'){
         await Plotly.relayout($('plan'),{'xaxis.range':[-2.15,2.15],'yaxis.range':[-2.15,2.15]});
         $('zoomHint').textContent='Full XY area. Scroll to zoom; drag to pan.';
@@ -176,13 +189,13 @@
           $('zoomHint').textContent='Close view: 0.9 m × 0.9 m. Full XY area restores the whole route.';
         }else $('zoomHint').textContent='No centroid in this frame. Choose a frame with saved returns.';
       }
-      readout(f,key,cloud[0].length);
-      $('heightValue').textContent=scale.toFixed(2);$('height').disabled=mode==='xyt';
-      const mspState=key==='msp'?` · MSP ${$('msp-domain').value.toUpperCase()} ${mspComplete[$('msp-domain').value]?'cached':'calculating'}`:'';
-      $('status').textContent='Ready · frame '+f.id+' · '+f.count+' points'+mspState;
+      readout(f,key,cloud[0].length,visible);
+      $('heightValue').textContent=scale.toFixed(2);$('height').disabled=mode==='xyt';$('rep-height').disabled=mode==='xyt';
+      const mspShown=visible.includes('msp'),mspState=mspShown?` · MSP ${$('msp-domain').value.toUpperCase()} ${mspComplete[$('msp-domain').value]?'cached':'calculating'}`:'';
+      $('status').textContent='Ready · frame '+f.id+' · '+f.count+' points · '+visible.length+' '+(visible.length===1?'trajectory':'trajectories')+mspState;
       Object.assign($('status').dataset,{frame:String(f.id),points:String(f.count),ready:'true',
         renderMs:(performance.now()-started).toFixed(1),selected:key,mspDomain:$('msp-domain').value,
-        mspReady:String(key!=='msp'||mspComplete[$('msp-domain').value]),compare:String(compare)});
+        mspReady:String(!mspShown||mspComplete[$('msp-domain').value]),shown:visible.join(','),heightMode:$('rep-height').value});
       cameraSnapshot();rendered=requested;
     }
     function fail(error){stop();rendered=version;$('status').textContent='Display error: '+error.message;console.error(error);}
@@ -205,11 +218,16 @@
       playing=true;$('play').textContent='Pause';tick(++playEpoch);};
     async function changeMethod(){
       updateMethodControls();
-      if($('center').value==='msp')await ensureMsp($('msp-domain').value);
+      if(shownMethods().includes('msp'))await ensureMsp($('msp-domain').value);
       request();
     }
-    $('center').onchange=changeMethod;$('msp-domain').onchange=changeMethod;
-    for(const id of ['trail','view','floor','accumulate','stride','compare'])$(id).onchange=request;
+    $('center').onchange=changeMethod;
+    $('msp-domain').onchange=async()=>{if(shownMethods().includes('msp'))await ensureMsp($('msp-domain').value);request();};
+    for(const method of methods)$('show-'+method).onchange=async event=>{
+      if(event.target.checked)extras.add(method);else extras.delete(method);updateMethodControls();
+      if(method==='msp'&&event.target.checked)await ensureMsp($('msp-domain').value);request();
+    };
+    for(const id of ['trail','view','rep-height','accumulate','stride'])$(id).onchange=request;
     $('height').oninput=request;$('reset').onclick=()=>{reset=true;request();};
     $('focusXY').onclick=()=>{planAction='person';request();};$('resetXY').onclick=()=>{planAction='full';request();};
     window.addEventListener('pagehide',stop);updateMethodControls();request();
