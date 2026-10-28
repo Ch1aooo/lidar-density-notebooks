@@ -8,7 +8,7 @@ export payload, markup, script
 # All hierarchy/metric/scale data delivered to the browser are computed in Julia.
 function payload(S)
     scenes=Any[]
-    for kind in ("two_targets","head_shoulders","arms_open","three_targets")
+    for kind in ("two_targets","two_arm","head_shoulders","arms_open","three_targets","four_targets")
         base=S.synthetic_scene()
         if kind=="two_targets"
             P=base.points; truth=2; name="Two targets · original bridge regression"
@@ -16,20 +16,24 @@ function payload(S)
             rng=S.StudyRNG(27); pts=Vector{Float64}[]
             specs=kind=="head_shoulders" ? [(120,0.,0.,.065,.085),(50,-.15,-.06,.045,.07),(50,.15,-.06,.045,.07)] :
                 kind=="arms_open" ? [(140,0.,0.,.08,.12),(40,-.32,0.,.055,.045),(40,.32,0.,.055,.045)] :
+                kind=="two_arm" ? [(120,-.28,0.,.065,.09),(110,.30,0.,.065,.09),(24,-.28,.25,.055,.04)] :
+                kind=="four_targets" ? [(100,-.32,-.22,.065,.07),(90,.32,-.22,.065,.07),(100,-.32,.22,.065,.07),(90,.32,.22,.065,.07)] :
                 [(110,-.42,0.,.065,.10),(100,-.08,0.,.065,.10),(80,.40,0.,.065,.10)]
             for (n,cx,cy,sx,sy) in specs, _ in 1:n
                 push!(pts,[cx+sx*S.normal!(rng),cy+sy*S.normal!(rng)])
             end
-            P=reduce(vcat,permutedims.(pts)); truth=kind=="three_targets" ? 3 : 1
+            P=reduce(vcat,permutedims.(pts)); truth=kind=="three_targets" ? 3 : kind=="four_targets" ? 4 : kind=="two_arm" ? 2 : 1
             name=kind=="head_shoulders" ? "Single target · head and shoulders" :
-                kind=="arms_open" ? "Single target · arms open" : "Three targets · nested merging"
+                kind=="arms_open" ? "Single target · arms open" : kind=="two_arm" ? "Two people · one arm protrusion (synthetic)" : kind=="four_targets" ? "Four targets · separated supports" : "Three targets · nested merging"
         end
         frames=Any[]
         for sigma in (.045,.06,.08,.10,.115,.15,.20,.24)
             f=S.gaussian_field(P;sigma=sigma)
             area=(f.x[2]-f.x[1])*(f.y[2]-f.y[1])
             fields=Dict{String,Any}()
-            for (field,values) in (("density",f.rho),("energy",f.rho.^2))
+            # Unit-integral 2D Gaussian: intensity integrates to expected return count.
+            density=f.rho./(2pi*sigma^2)
+            for (field,values) in (("density",density),)
                 t=merge_tree(values;cellarea=area)
                 ps=Any[]
                 for p in t.peaks
@@ -49,13 +53,14 @@ function payload(S)
                 end
                 fields[field]=Dict("peaks"=>ps,"events"=>t.events)
             end
-            push!(frames,Dict("sigma"=>sigma,"rho"=>[collect(r) for r in eachrow(f.rho)],"fields"=>fields))
+            push!(frames,Dict("sigma"=>sigma,"rho"=>[collect(r) for r in eachrow(density)],"fields"=>fields,
+                "domain_count"=>sum(density)*area,"source_count"=>size(P,1)))
         end
         push!(scenes,Dict("id"=>kind,"name"=>name,"truth"=>truth,"points"=>S.rows(P),
             "x"=>collect(range(-.72,.72;length=82)),"y"=>collect(range(-.5,.5;length=58)),"frames"=>frames))
     end
     Dict("scenes"=>scenes,"adjacency"=>8,"seed"=>27,
-        "normalization"=>"Unnormalised Gaussian sum; linear density score and its square. Grid spacing area quadrature.",
+        "normalization"=>"Sum of unit-integral 2D Gaussian kernels: exp(-r²/(2σ²))/(2πσ²), returns/m²; area quadrature yields smoothed return count. Finite-domain tails are not renormalised.",
         "scope"=>"Synthetic controls; thresholds exploratory; local peaks, modes, components, target hypotheses and tracks are distinct.")
 end
 

@@ -3,11 +3,43 @@ const $=id=>document.getElementById(id),data=JSON.parse($('initial-payload').tex
 if(!data)return;
 const cfg={responsive:true,displaylogo:false},blue='#246a96',orange='#b64e16';
 let scene,frame,field,selected=1;
+let metricKey='height';
+const metricDefs={
+ peak:['Peak','Local maximum','Position of a local maximum; an ID within this bandwidth, not a person ID.','—'],
+ parent:['Parent','Elder representative','At a merge, the higher-born peak remains the representative. See the set-valued nodes in C.','—'],
+ height:['Rel. height','(h − s) / h','A = peak height above saddle; B = peak height above zero. Ratio A/B measures vertical prominence.','dimensionless'],
+ excess:['Rel. excess','X / N̂','A = density integral above the saddle floor; B = full density integral over the same region R. Ratio A/B measures excess contribution.','dimensionless'],
+ area:['Area','Aᵣ = ∫R 1 dA','Footprint of the branch strictly above its own saddle. The section below represents a 2D footprint schematically.','m²'],
+ mass:['Est. returns','N̂ = ∫R ρ dA','Unit-integral kernels turn this integral into smoothed return count. It is generally fractional.','returns'],
+ raw:['Raw returns','N = # {original returns mapped into R}','Direct count of original measurements in the same region; no density integration.','returns'],
+ difference:['Δ returns','N̂ − N','Signed discrepancy of smoothed integral and direct count. Not a localization or person-count accuracy score.','returns'],
+ selection:['Selection','height ≥ threshold AND excess ≥ threshold','Both tests must pass. The essential root is retained by convention. Area and return counts are not pruning tests.','retained / pruned']
+};
+function explainMetric(key){
+ metricKey=key;const d=metricDefs[key],hot='#b64e16',cool='#dce8f2',h=['height','selection'].includes(key),e=['excess','selection'].includes(key),m=['mass','difference'].includes(key),r=['raw','difference'].includes(key),a=key==='area';
+ const curve='M60 130 C85 130 95 50 150 50 C205 50 215 130 240 130';
+ $('ph-explain').innerHTML=`<strong>${d[0]} · ${d[1]}</strong><svg viewBox="0 0 400 235" style="width:100%;max-height:230px" role="img" aria-label="Schematic density cross-section: peak h, saddle s, branch footprint R, density integral and raw returns. Not measured data.">
+ <path d="${curve} L240 190 L60 190 Z" fill="${m?'#efc7a9':cool}" stroke="none"/>
+ <path d="${curve} Z" fill="${e?hot:'#b7cfdf'}" opacity=".8"/>
+ <path d="${curve}" fill="none" stroke="#246a96" stroke-width="3"/>
+ <path d="M35 190 H265 M35 190 V25" stroke="#536879" fill="none"/>
+ <path d="M40 130 H265" stroke="#536879" stroke-dasharray="5 4"/>
+ <text x="12" y="25" font-size="12">ρ</text><text x="20" y="194" font-size="12">0</text><text x="267" y="134" font-size="12">s</text>
+ <circle cx="150" cy="50" r="5" fill="${key==='peak'?hot:'#246a96'}"/><text x="160" y="43" font-size="12">h · peak</text>
+ <g style="display:${h?'inline':'none'}"><path d="M285 50 V130 M280 50 H290 M280 130 H290" stroke="${h?hot:'#96a8b6'}" stroke-width="3"/><text x="294" y="88" font-size="12">A = h−s</text>
+ <path d="M365 50 V190 M360 50 H370 M360 190 H370" stroke="${h?hot:'#96a8b6'}" stroke-width="2"/><text x="320" y="180" font-size="12">B = h</text></g>
+ <path d="M60 206 H240 M60 201 V211 M240 201 V211" stroke="${a?hot:'#536879'}" stroke-width="3"/><text x="104" y="227" font-size="12">Region R · XY footprint</text>
+ ${[75,95,120,143,163,184,217].map(x=>`<circle cx="${x}" cy="181" r="3" fill="${r?hot:'#727e87'}"/>`).join('')}
+ <text x="99" y="108" font-size="12" fill="${e?'#fff':'#173f60'}">${key==='excess'?'A = X':'X: above s'}</text><text x="72" y="155" font-size="12">${key==='excess'?'B = N̂ (all shading)':'N̂: entire shaded region'}</text></svg><p style="margin:4px 0">${d[2]} Unit: ${d[3]}. Illustration only.</p>`;
+ if(key==='parent'){$('ph-explain').querySelector('svg').innerHTML='<path d="M100 40 V130 H200 M300 70 V130 H200 V190" fill="none" stroke="#246a96" stroke-width="3"/><circle cx="200" cy="130" r="6" fill="#b64e16"/><text x="68" y="30">P1 · higher</text><text x="265" y="60">P2</text><text x="150" y="155">{P1, P2}</text><text x="70" y="218">P2 Parent = P1 (representative)</text>';}
+ $('ph-table').querySelectorAll('[data-metric]').forEach(b=>{b.style.color=b.dataset.metric===key?hot:'#215b89';b.setAttribute('aria-pressed',b.dataset.metric===key?'true':'false');});
+}
+$('ph-formulas').innerHTML=Object.values(metricDefs).map(d=>`<p><strong>${d[0]}</strong>: ${d[1]} [${d[3]}]. ${d[2]}</p>`).join('');
 function opt(el,items,value){el.replaceChildren(...items.map(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;return o;}));el.value=value;}
 opt($('ph-scene'),data.scenes.map((s,i)=>[i,s.name]),0);
 function kept(p){return p.parent===0||(p.height>=+$('ph-height').value&&p.metrics.relative_excess>=+$('ph-excess').value);}
 function axes(){return{margin:{l:50,r:70,t:15,b:45},xaxis:{title:{text:'X (m)'},range:[-.72,.72]},yaxis:{title:{text:'Y (m)'},range:[-.5,.5],scaleanchor:'x'},paper_bgcolor:'#fff',plot_bgcolor:'#fbfdff',showlegend:false,uirevision:scene.id};}
-function loadScene(){scene=data.scenes[+$('ph-scene').value];opt($('ph-sigma'),scene.frames.map((f,i)=>[i,f.sigma.toFixed(3)]),4);loadFrame();}
+function loadScene(){scene=data.scenes[+$('ph-scene').value];opt($('ph-sigma'),scene.frames.map((f,i)=>[i,f.sigma.toFixed(3)]),scene.id==='two_arm'?0:4);selected=scene.id==='two_arm'?3:1;loadFrame();}
 function loadFrame(){frame=scene.frames[+$('ph-sigma').value];field=frame.fields[$('ph-field').value];selected=Math.min(selected,field.peaks.length)||1;opt($('ph-peak'),field.peaks.map(p=>[p.id,'P'+p.id+(p.parent===0?' · root':'')]),selected);render();}
 // Reconstruct component nodes from Julia merge events, without changing topology.
 function componentTree(peaks,events){
@@ -36,6 +68,7 @@ function drawTree(max,water,energy){
  $('ph-tree-note').textContent=`At ${(water*100).toFixed(0)}% water level: ${cut.length} connected component(s), before pruning. Read downward: peaks → merge saddles → shared component. Horizontal placement is layout only; dotted root continues below the displayed range.`;
 }
 function render(){
+ $('ph-scene-guide').textContent=scene.id==='two_arm'?'Arm control (illustrative, tuned geometry): at σ = 0.045 m there are three peaks. With height 20% and excess 10%, the weak arm peak is pruned and two modes remain. Set both thresholds to zero to retain all three. At σ = 0.20 m the same thresholds incorrectly retain only one mode. No arm points are deleted.':'Fixed source: changing bandwidth or thresholds does not regenerate the points. Compare retained modes with the generator target count; equality alone does not establish correct person localization.';
  const energy=$('ph-field').value==='energy',db=$('ph-display').value==='db',linear=frame.rho.map(r=>r.map(v=>energy?v*v:v)),max=Math.max(...linear.flat()),water=+$('ph-water').value;
  const z=linear.map(r=>r.map(v=>db?Math.max(-40,10*Math.log10(Math.max(v/max,1e-300))):v/max));
  const heat={type:'heatmap',x:scene.x,y:scene.y,z,colorscale:'Blues',zmin:db?-40:0,zmax:db?0:1,colorbar:{title:{text:db?'dB':energy?'E/Emax':'ρ/ρmax'},thickness:12}};
@@ -48,9 +81,11 @@ function render(){
  const saddleIndex=event?.saddle_cells?.[0],saddleTrace={type:'scatter',mode:'markers+text',x:saddleIndex?[scene.x[Math.floor((saddleIndex-1)/ny)]]:[],y:saddleIndex?[scene.y[(saddleIndex-1)%ny]]:[],text:['merge'],textposition:'bottom center',marker:{symbol:'x',size:12,color:'#222'},hovertemplate:'Discrete merge-level cell<extra></extra>'};
  Plotly.react($('ph-component'),[{...heat,opacity:.35},{type:'heatmap',x:scene.x,y:scene.y,z:region,colorscale:[[0,'#e0a056'],[1,'#b95719']],showscale:false,opacity:.65},points,peaks,saddleTrace],axes(),cfg);
  drawTree(max,water,energy);
- const fmt=v=>v==null?'—':Number(v).toPrecision(4),rows=field.peaks.map(q=>`<tr><td><button data-peak="${q.id}">P${q.id}</button></td><td>${q.parent||'root'}</td><td>${fmt(q.height)}</td><td>${fmt(q.metrics?.relative_excess)}</td><td>${fmt(q.metrics?.area)}</td><td>${fmt(q.metrics?.mass)}</td><td>${q.raw_support??'—'}</td><td>${kept(q)?'retained':'pruned'}</td></tr>`).join('');
- $('ph-table').innerHTML='<table><thead><tr><th>Peak</th><th>Parent</th><th>Rel. height</th><th>Rel. excess</th><th>Area m²</th><th>Mass</th><th>Returns</th><th>Selection</th></tr></thead><tbody>'+rows+'</tbody></table>';
- $('ph-table').querySelectorAll('button').forEach(b=>b.onclick=()=>choose(+b.dataset.peak));
+ const fmt=v=>v==null?'—':Number(v).toPrecision(4),rows=field.peaks.map(q=>`<tr><td><button data-peak="${q.id}">P${q.id}</button></td><td>${q.parent||'root'}</td><td>${fmt(q.height)}</td><td>${fmt(q.metrics?.relative_excess)}</td><td>${fmt(q.metrics?.area)}</td><td>${fmt(q.metrics?.mass)}</td><td>${q.raw_support??'—'}</td><td>${q.metrics?fmt(q.metrics.mass-q.raw_support):'—'}</td><td>${kept(q)?'retained':'pruned'}</td></tr>`).join('');
+ $('ph-table').innerHTML='<table><thead><tr>'+Object.entries(metricDefs).map(([k,d])=>`<th><button data-metric="${k}" style="border:0;background:transparent;font:inherit;font-weight:600;padding:0;cursor:help">${d[0]}</button></th>`).join('')+'</tr></thead><tbody>'+rows+'</tbody></table>';
+ $('ph-table').querySelectorAll('[data-peak]').forEach(b=>b.onclick=()=>choose(+b.dataset.peak));
+ $('ph-table').querySelectorAll('[data-metric]').forEach(b=>{b.onmouseenter=b.onfocus=b.onclick=()=>explainMetric(b.dataset.metric);});explainMetric(metricKey);
+ $('ph-count-check').textContent=`Whole displayed grid: integrated density ${fmt(frame.domain_count)} returns; source ${frame.source_count} returns; difference ${fmt(frame.domain_count-frame.source_count)}. Gaussian tails outside the window are not renormalised.`;
  const fs=scene.frames.map(f=>f.fields[$('ph-field').value]);
  Plotly.react($('ph-scale'),[{type:'scatter',mode:'lines+markers',name:'All local peaks',x:scene.frames.map(f=>f.sigma),y:fs.map(f=>f.peaks.length),line:{color:blue,dash:'dot'}},{type:'scatter',mode:'lines+markers',name:'Retained modes',x:scene.frames.map(f=>f.sigma),y:fs.map(f=>f.peaks.filter(kept).length),line:{color:orange}}],{margin:{l:50,r:15,t:15,b:65},xaxis:{title:{text:'Bandwidth σ (m)'}},yaxis:{title:{text:'Count'},dtick:1,rangemode:'tozero'},legend:{orientation:'h',y:-.25}},cfg);
  $('ph-height-out').textContent=(100*+$('ph-height').value).toFixed(0)+'%';$('ph-excess-out').textContent=(100*+$('ph-excess').value).toFixed(0)+'%';$('ph-water-out').textContent=(100*water).toFixed(0)+'% of field maximum';
